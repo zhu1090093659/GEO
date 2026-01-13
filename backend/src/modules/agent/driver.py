@@ -16,7 +16,7 @@ import os
 from typing import AsyncIterator, Optional
 from pathlib import Path
 from dataclasses import dataclass
-from ..config.settings import settings
+from src.config.settings import settings
 
 
 @dataclass

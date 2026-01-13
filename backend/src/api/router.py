@@ -29,7 +29,8 @@ async def health():
 api_router.include_router(chat_router, tags=["chat"])
 
 # GEO Core modules
-api_router.include_router(tracking_router, tags=["tracking"])
-api_router.include_router(analysis_router, tags=["analysis"])
-api_router.include_router(citation_router, tags=["citation"])
-api_router.include_router(optimization_router, tags=["optimization"])
+api_router.include_router(tracking_router, prefix="/tracking", tags=["tracking"])
+api_router.include_router(analysis_router, prefix="/analysis", tags=["analysis"])
+api_router.include_router(citation_router, prefix="/citation", tags=["citation"])
+api_router.include_router(optimization_router, prefix="/optimization", tags=["optimization"])
+

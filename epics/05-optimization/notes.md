@@ -1,5 +1,49 @@
 # Notes: 优化建议系统
 
+## Session Notes
+
+### 2026-01-13 - Session #4 - Epic 05 COMPLETED - MVP v0.1 DONE! 🎉
+
+**Completed**:
+- [x] Recommendation + LlmsTxtResult + OptimizationStats SQLAlchemy 数据模型
+- [x] Alembic 迁移成功 (3 张新表)
+- [x] 8 条优化建议模板 (数据驱动条件)
+- [x] 建议生成服务 (基于 Tracking 数据)
+- [x] 建议查询/更新 API
+- [x] llms.txt 生成器 (符合 llmstxt.org 规范)
+- [x] Preview + Download 功能
+- [x] 统计 API
+
+**Key Technical Decisions**:
+1. 使用模板化建议而非纯 Claude 生成 (MVP 简化)
+2. 建议根据品牌数据条件触发
+3. Impact Score 用于排序优先级
+4. llms.txt 缓存 30 天
+
+**API Endpoints Implemented**:
+- `POST /api/optimization/recommendations` - 生成建议
+- `GET /api/optimization/recommendations` - 查询建议
+- `PATCH /api/optimization/recommendations/{id}` - 更新状态
+- `POST /api/optimization/llms-txt` - 生成 llms.txt
+- `GET /api/optimization/llms-txt/{id}/preview` - 预览
+- `GET /api/optimization/llms-txt/{id}/download` - 下载
+- `GET /api/optimization/stats` - 统计
+
+**Recommendation Categories**:
+1. **content**: FAQ, 产品描述, 权威内容
+2. **structure**: Schema.org markup
+3. **technical**: llms.txt, AI 爬虫优化
+4. **seo**: 域名权威
+5. **branding**: 品牌情感
+
+**MVP v0.1 Summary**:
+- 5 个 Epic 全部完成
+- 16+ 数据库表
+- 30+ API 端点
+- 约 4 小时开发时间
+
+---
+
 ## Optimization Advisor Prompt
 
 ```

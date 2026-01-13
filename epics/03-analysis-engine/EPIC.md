@@ -3,10 +3,11 @@
 ## Overview
 
 **ID**: 03
-**Status**: TODO
+**Status**: DONE
 **Priority**: P0
 **Target Release**: v0.1
 **Estimated Effort**: 5 days
+**Actual Effort**: 1 day
 
 ---
 
@@ -18,10 +19,10 @@
 
 ## Success Criteria
 
-- [ ] 能够分析竞争对手的可见度和表现
-- [ ] 能够分析品牌在 AI 回复中的情感倾向
-- [ ] 能够自动发现热门 Topic 和关键词
-- [ ] 提供多语言和多区域分析支持
+- [x] 能够分析竞争对手的可见度和表现
+- [x] 能够分析品牌在 AI 回复中的情感倾向
+- [x] 能够自动发现热门 Topic 和关键词
+- [ ] 提供多语言和多区域分析支持 (v0.2)
 
 ---
 
@@ -107,9 +108,9 @@ See [tasks.md](./tasks.md) for detailed task list.
 
 | Phase | Tasks | Status |
 |-------|-------|--------|
-| Phase 1: 竞争分析 | 4 tasks | TODO |
-| Phase 2: 情感分析 | 3 tasks | TODO |
-| Phase 3: Topic 发现 | 4 tasks | TODO |
+| Phase 1: 竞争分析 | 4 tasks | DONE |
+| Phase 2: 情感分析 | 3 tasks | DONE |
+| Phase 3: Topic 发现 | 4 tasks | DONE |
 
 ---
 

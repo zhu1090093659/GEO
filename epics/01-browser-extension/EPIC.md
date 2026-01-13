@@ -3,7 +3,7 @@
 ## Overview
 
 **ID**: 01
-**Status**: TODO
+**Status**: DONE
 **Priority**: P0
 **Target Release**: v0.1
 **Estimated Effort**: 5 days
@@ -18,11 +18,11 @@
 
 ## Success Criteria
 
-- [ ] Chrome 扩展可以成功安装并运行在 Chrome/Edge 浏览器
-- [ ] 能够拦截 ChatGPT (chat.openai.com) 的对话内容
-- [ ] 能够拦截 Claude (claude.ai) 的对话内容
-- [ ] 数据成功上传至后端 API 并存储
-- [ ] 用户隐私得到保护（数据脱敏、用户授权）
+- [x] Chrome 扩展可以成功安装并运行在 Chrome/Edge 浏览器
+- [x] 能够拦截 ChatGPT (chat.openai.com) 的对话内容
+- [x] 能够拦截 Claude (claude.ai) 的对话内容
+- [x] 数据成功上传至后端 API 并存储
+- [x] 用户隐私得到保护（数据脱敏、用户授权）
 
 ---
 
@@ -117,10 +117,10 @@ See [tasks.md](./tasks.md) for detailed task list.
 
 | Phase | Tasks | Status |
 |-------|-------|--------|
-| Phase 1: 扩展基础架构 | 5 tasks | TODO |
-| Phase 2: 内容脚本开发 | 4 tasks | TODO |
-| Phase 3: 后端 API 对接 | 3 tasks | TODO |
-| Phase 4: 用户授权流程 | 3 tasks | TODO |
+| Phase 1: 扩展基础架构 | 5 tasks | DONE |
+| Phase 2: 内容脚本开发 | 4 tasks | DONE |
+| Phase 3: 后端 API 对接 | 3 tasks | DONE |
+| Phase 4: 用户授权流程 | 3 tasks | DONE |
 
 ---
 

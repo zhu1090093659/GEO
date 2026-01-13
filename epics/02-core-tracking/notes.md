@@ -1,5 +1,34 @@
 # Notes: 核心追踪系统
 
+## Session Log
+
+### 2026-01-13 - Session #3
+
+**Completed**:
+- [x] Phase 1: 数据模型设计 (Conversation, Message, BrandMention, VisibilityScore, Brand)
+- [x] Phase 2: API 开发 (upload, visibility, ranking, stats, brands, calculate-scores, rankings)
+- [x] Phase 3: 可见度计算 (多维度加权公式 + 趋势分析)
+- [x] Alembic 迁移配置
+- [x] 端到端测试通过
+
+**Notes**:
+- 使用 SQLAlchemy async + aiosqlite 实现异步数据库操作
+- 需要安装 greenlet 库才能正常运行 SQLAlchemy async
+- 可见度分数公式: frequency(40%) + position(30%) + sentiment(20%) + type(10%)
+- 品牌识别目前使用关键词匹配，后续可升级为 Claude API NER
+
+**Time Summary**:
+- 预估总时间: 4 days (~32h)
+- 实际总时间: ~7h
+- 效率提升: 78%
+
+**Next**:
+- [ ] 开始 Epic 03 - 分析引擎
+- [ ] 实现竞争分析服务
+- [ ] 实现情感分析 (Claude API)
+
+---
+
 ## Data Model Design
 
 ### Conversation Table
@@ -46,15 +75,21 @@ CREATE TABLE visibility_scores (
 );
 ```
 
-## Visibility Score Formula
+## Visibility Score Formula (Implemented)
 
 ```
-Score = Σ (mention_weight × position_weight × sentiment_weight)
+score = frequency(40%) + position(30%) + sentiment(20%) + type(10%)
 
 Where:
-- mention_weight: 1.0 for direct, 0.5 for indirect
-- position_weight: 1.0 for first position, decreasing for later
-- sentiment_weight: 1.0 + sentiment_score (0 to 2 range)
+- frequency_score: log1p(mention_rate * 10) / log1p(10), capped at 1.0
+- position_score: exp(-avg_position / 500), min 0.1
+- sentiment_score: (avg_sentiment + 1) / 2, normalized to [0,1]
+- type_score: weighted average based on mention type multipliers:
+  - RECOMMENDATION: 1.5
+  - DIRECT: 1.0
+  - COMPARISON: 0.8
+  - INDIRECT: 0.6
+  - NEGATIVE: 0.3
 ```
 
 ## API Design

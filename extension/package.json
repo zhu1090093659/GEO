@@ -5,13 +5,15 @@
   "private": true,
   "scripts": {
     "dev": "vite build --watch",
-    "build": "vite build",
+    "build": "vite build && npm run copy-static",
+    "copy-static": "shx cp manifest.json dist/ && shx cp src/popup/popup.html dist/popup/ && shx cp src/popup/consent.html dist/popup/ && shx cp src/popup/preview.html dist/popup/ && shx mkdir -p dist/icons",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.260",
     "eslint": "^8.57.0",
+    "shx": "^0.3.4",
     "typescript": "^5.3.3",
     "vite": "^5.0.12"
   }

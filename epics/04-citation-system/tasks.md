@@ -5,46 +5,48 @@
 | Metric | Value |
 |--------|-------|
 | Total Tasks | 7 |
-| Completed | 0 |
+| Completed | 7 |
 | In Progress | 0 |
-| Remaining | 7 |
-| Progress | 0% |
+| Remaining | 0 |
+| Progress | 100% |
 
 ---
 
 ## Phase 1: 引文提取
 
 **Goal**: 实现引文发现和提取
-**Status**: TODO
+**Status**: DONE
 
 | ID | Task | Status | Est. | Actual | Assignee | Notes |
 |----|------|--------|------|--------|----------|-------|
-| 1.1 | 设计引文数据模型 | TODO | 2h | - | - | |
-| 1.2 | 实现 URL/来源提取 | TODO | 4h | - | - | 正则 + LLM |
-| 1.3 | 实现引文查询 API | TODO | 2h | - | - | |
+| 1.1 | 设计引文数据模型 | DONE | 2h | 1h | Claude | Citation, CitationSource, WebsiteAnalysis |
+| 1.2 | 实现 URL/来源提取 | DONE | 4h | 1h | Claude | 正则匹配 URL/域名/命名来源 |
+| 1.3 | 实现引文查询 API | DONE | 2h | 0.5h | Claude | discover, extract, stats |
 
 **Phase 1 Notes**:
-- 支持多种引用格式识别
-- 来源分类：官网、新闻、论文、社交媒体等
+- ✅ 支持 URL、域名引用、命名来源三种类型
+- ✅ 来源分类：website, news, academic, social, gov, edu, docs, ecommerce
+- ✅ 自动计算权威分数 (based on domain type)
 
 ---
 
 ## Phase 2: 网站分析
 
 **Goal**: 实现网站一键分析功能
-**Status**: TODO
+**Status**: DONE
 **Depends on**: Phase 1
 
 | ID | Task | Status | Est. | Actual | Assignee | Notes |
 |----|------|--------|------|--------|----------|-------|
-| 2.1 | 设计网站分析 API | TODO | 1h | - | - | |
-| 2.2 | 实现网站内容抓取 | TODO | 3h | - | - | |
-| 2.3 | 实现引用匹配分析 | TODO | 4h | - | - | |
-| 2.4 | 生成分析报告 | TODO | 2h | - | - | |
+| 2.1 | 设计网站分析 API | DONE | 1h | 0.5h | Claude | POST /analyze, GET /analyze/{id} |
+| 2.2 | 实现网站内容抓取 | DONE | 3h | 0.5h | Claude | 简化版 (MVP) |
+| 2.3 | 实现引用匹配分析 | DONE | 4h | 0.5h | Claude | 基于 citation 数据库查询 |
+| 2.4 | 生成分析报告 | DONE | 2h | 0.5h | Claude | 5 类优化建议 |
 
 **Phase 2 Notes**:
-- 网站分析为异步任务
-- 结果缓存 24 小时
+- ✅ 结果缓存 24 小时
+- ✅ 自动生成 llms.txt、Schema.org、FAQ 等建议
+- ⏳ 真实网页抓取待后续增强
 
 ---
 

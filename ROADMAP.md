@@ -19,11 +19,11 @@
 
 | # | Epic | Status | Priority | Est. | Notes |
 |---|------|--------|----------|------|-------|
-| 01 | [浏览器扩展与数据收集](./epics/01-browser-extension/EPIC.md) | TODO | P0 | 5d | Chrome 扩展拦截 AI 对话 |
-| 02 | [核心追踪系统](./epics/02-core-tracking/EPIC.md) | TODO | P0 | 4d | 可见度、排名计算与存储 |
-| 03 | [分析引擎](./epics/03-analysis-engine/EPIC.md) | TODO | P0 | 5d | 竞争分析、情感、关键词 |
-| 04 | [引文系统](./epics/04-citation-system/EPIC.md) | TODO | P1 | 3d | 引文提取与网站分析 |
-| 05 | [优化建议系统](./epics/05-optimization/EPIC.md) | TODO | P1 | 3d | Agent 优化建议 + llms.txt |
+| 01 | [浏览器扩展与数据收集](./epics/01-browser-extension/EPIC.md) | DONE | P0 | 5d | Chrome 扩展拦截 AI 对话 |
+| 02 | [核心追踪系统](./epics/02-core-tracking/EPIC.md) | DONE | P0 | 4d | 可见度、排名计算与存储 |
+| 03 | [分析引擎](./epics/03-analysis-engine/EPIC.md) | DONE | P0 | 5d | 竞争分析、情感、关键词 |
+| 04 | [引文系统](./epics/04-citation-system/EPIC.md) | DONE | P1 | 3d | 引文提取与网站分析 |
+| 05 | [优化建议系统](./epics/05-optimization/EPIC.md) | DONE | P1 | 3d | Agent 优化建议 + llms.txt |
 
 **MVP Success Criteria**:
 - [ ] 浏览器扩展成功捕获 ChatGPT/Claude 对话数据

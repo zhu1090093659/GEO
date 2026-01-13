@@ -10,6 +10,8 @@ export default defineConfig({
         'content/chatgpt': resolve(__dirname, 'src/content/chatgpt.ts'),
         'content/claude': resolve(__dirname, 'src/content/claude.ts'),
         'popup/popup': resolve(__dirname, 'src/popup/popup.ts'),
+        'popup/consent': resolve(__dirname, 'src/popup/consent.ts'),
+        'popup/preview': resolve(__dirname, 'src/popup/preview.ts'),
       },
       output: {
         entryFileNames: '[name].js',

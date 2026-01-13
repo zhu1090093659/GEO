@@ -3,10 +3,11 @@
 ## Overview
 
 **ID**: 04
-**Status**: TODO
+**Status**: DONE
 **Priority**: P1
 **Target Release**: v0.1
 **Estimated Effort**: 3 days
+**Actual Effort**: 0.5 day
 
 ---
 
@@ -18,10 +19,10 @@
 
 ## Success Criteria
 
-- [ ] 能够从 AI 回复中提取引用的来源
-- [ ] 能够分析引用来源的权威性和相关性
-- [ ] 能够输入 URL 一键分析网站被 AI 引用情况
-- [ ] 提供引文来源的统计和趋势
+- [x] 能够从 AI 回复中提取引用的来源
+- [x] 能够分析引用来源的权威性和相关性
+- [x] 能够输入 URL 一键分析网站被 AI 引用情况
+- [x] 提供引文来源的统计和趋势
 
 ---
 
@@ -92,8 +93,8 @@ See [tasks.md](./tasks.md) for detailed task list.
 
 | Phase | Tasks | Status |
 |-------|-------|--------|
-| Phase 1: 引文提取 | 3 tasks | TODO |
-| Phase 2: 网站分析 | 4 tasks | TODO |
+| Phase 1: 引文提取 | 3 tasks | DONE |
+| Phase 2: 网站分析 | 4 tasks | DONE |
 
 ---
 

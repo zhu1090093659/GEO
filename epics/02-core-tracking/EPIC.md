@@ -3,7 +3,7 @@
 ## Overview
 
 **ID**: 02
-**Status**: TODO
+**Status**: DONE
 **Priority**: P0
 **Target Release**: v0.1
 **Estimated Effort**: 4 days
@@ -18,11 +18,11 @@
 
 ## Success Criteria
 
-- [ ] 能够接收并存储扩展上传的对话数据
-- [ ] 能够识别 AI 回复中提及的品牌/产品
-- [ ] 能够计算品牌可见度分数
-- [ ] 能够计算品牌排名（与竞品对比）
-- [ ] 提供 API 查询可见度和排名数据
+- [x] 能够接收并存储扩展上传的对话数据
+- [x] 能够识别 AI 回复中提及的品牌/产品
+- [x] 能够计算品牌可见度分数
+- [x] 能够计算品牌排名（与竞品对比）
+- [x] 提供 API 查询可见度和排名数据
 
 ---
 
@@ -93,9 +93,9 @@ See [tasks.md](./tasks.md) for detailed task list.
 
 | Phase | Tasks | Status |
 |-------|-------|--------|
-| Phase 1: 数据模型设计 | 3 tasks | TODO |
-| Phase 2: API 开发 | 4 tasks | TODO |
-| Phase 3: 可见度计算 | 3 tasks | TODO |
+| Phase 1: 数据模型设计 | 3 tasks | DONE |
+| Phase 2: API 开发 | 4 tasks | DONE |
+| Phase 3: 可见度计算 | 3 tasks | DONE |
 
 ---
 
@@ -110,8 +110,8 @@ See [tasks.md](./tasks.md) for detailed task list.
 
 ## Open Questions
 
-- [ ] 可见度分数计算公式？
-  - Answer: 待定，初步考虑 (提及次数 × 位置权重 × 情感权重)
+- [x] 可见度分数计算公式？
+  - Answer: frequency(40%) + position(30%) + sentiment(20%) + type(10%)
 
 ---
 

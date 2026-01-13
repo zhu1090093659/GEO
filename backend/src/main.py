@@ -1,5 +1,7 @@
 """
 FastAPI Application Entry Point
+
+GEO - Generative Engine Optimization Platform
 """
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -14,9 +16,19 @@ async def lifespan(app: FastAPI):
     """Application lifespan handler."""
     # Startup
     print(f"Starting {settings.app_name}...")
+    
+    # Initialize database (creates tables if they don't exist)
+    # In production, use Alembic migrations instead
+    from src.config.database import init_db, close_db
+    if settings.debug:
+        await init_db()
+        print("Database initialized (debug mode)")
+    
     yield
+    
     # Shutdown
     print("Shutting down...")
+    await close_db()
 
 
 def create_app() -> FastAPI:

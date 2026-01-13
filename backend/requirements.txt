@@ -4,10 +4,11 @@ uvicorn[standard]==0.30.6
 pydantic==2.9.0
 pydantic-settings==2.5.0
 
-# Database
+# Database (MVP uses SQLite)
 sqlalchemy==2.0.35
-asyncpg==0.29.0
+aiosqlite==0.20.0
 alembic==1.13.3
+greenlet==3.1.1
 
 # Authentication
 python-jose[cryptography]==3.3.0

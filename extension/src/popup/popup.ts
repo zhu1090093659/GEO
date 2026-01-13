@@ -10,6 +10,25 @@ const queueCount = document.getElementById('queue-count') as HTMLElement
 
 // State
 let isEnabled = true
+let hasConsented = false
+
+/**
+ * Check if user has consented
+ */
+async function checkConsent(): Promise<boolean> {
+  const response = await chrome.runtime.sendMessage({ type: 'GET_STATUS' })
+  return response?.hasConsented || false
+}
+
+/**
+ * Redirect to consent page if not consented
+ */
+async function ensureConsent(): Promise<void> {
+  hasConsented = await checkConsent()
+  if (!hasConsented) {
+    window.location.href = 'consent.html'
+  }
+}
 
 /**
  * Update UI based on current state
@@ -40,29 +59,40 @@ function updateUI(enabled: boolean, queueSize: number = 0): void {
  * Toggle data collection on/off
  */
 async function toggleCollection(): Promise<void> {
-  chrome.runtime.sendMessage(
-    { type: 'SET_ENABLED', enabled: !isEnabled },
-    (response) => {
-      if (response?.success) {
-        updateUI(!isEnabled)
-      }
-    }
-  )
+  const newState = !isEnabled
+  const response = await chrome.runtime.sendMessage({
+    type: 'SET_ENABLED',
+    enabled: newState,
+  })
+  
+  if (response?.success) {
+    updateUI(newState)
+  }
 }
 
 /**
  * Get current status from background
  */
 async function getStatus(): Promise<void> {
-  chrome.runtime.sendMessage({ type: 'GET_STATUS' }, (response) => {
-    if (response) {
-      updateUI(response.isEnabled, response.queueSize)
-    }
-  })
+  const response = await chrome.runtime.sendMessage({ type: 'GET_STATUS' })
+  if (response) {
+    hasConsented = response.hasConsented
+    updateUI(response.isEnabled, response.queueSize)
+  }
 }
 
 // Event listeners
-toggleBtn.addEventListener('click', toggleCollection)
+toggleBtn?.addEventListener('click', toggleCollection)
+
+// Preview button
+document.getElementById('preview-btn')?.addEventListener('click', () => {
+  window.location.href = 'preview.html'
+})
 
 // Initialize
-getStatus()
+async function init(): Promise<void> {
+  await ensureConsent()
+  await getStatus()
+}
+
+init()
