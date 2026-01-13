@@ -7,7 +7,7 @@ export default function HomePage() {
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-            [AGENT_NAME]
+            GEO
           </h1>
           <span className="text-sm text-gray-500 dark:text-gray-400">
             Powered by Claude
@@ -19,8 +19,8 @@ export default function HomePage() {
       <main className="flex-1 overflow-hidden">
         <div className="h-full max-w-4xl mx-auto">
           <ChatWindow
-            title="[AGENT_NAME]"
-            welcomeMessage="Hello! I'm [AGENT_NAME], your AI assistant. How can I help you today?"
+            title="GEO Assistant"
+            welcomeMessage="Hello! I'm GEO Assistant, helping you optimize your brand visibility in AI responses. How can I help you today?"
           />
         </div>
       </main>

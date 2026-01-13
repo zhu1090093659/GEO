@@ -10,8 +10,11 @@ This glossary ensures consistent terminology across code, documentation, and com
 
 | Term | Definition | Usage Notes |
 |------|------------|-------------|
-| User | An individual with an account in the system | Not "customer", "member", or "account" |
-| [Term] | [Definition] | [Notes] |
+| GEO | Generative Engine Optimization - 优化品牌在 AI 生成回复中的可见度 | 项目名称，全大写 |
+| Visibility | 品牌在 AI 回复中的曝光程度 | Not "exposure" or "presence" |
+| Mention | AI 回复中对品牌的引用 | Not "reference" or "citation" |
+| Citation | AI 回复中引用的外部来源 | Not "source" or "link" |
+| Topic | 用户查询的主题分类 | Not "category" or "subject" |
 
 ---
 
@@ -21,38 +24,71 @@ This glossary ensures consistent terminology across code, documentation, and com
 
 | Term | Definition | Code Usage |
 |------|------------|------------|
-| User | A registered individual | `User`, `user_id` |
-| Account | The user's billing/subscription entity | `Account`, `account_id` |
-| Profile | User's public-facing information | `UserProfile`, `profile_id` |
-| Session | An authenticated login session | `Session`, `session_id` |
+| User | 使用 GEO 平台的注册用户 | `User`, `user_id` |
+| Contributor | 安装扩展并贡献数据的用户 | `Contributor`, `contributor_id` |
 
-### [Domain]-Related
+### Brand-Related
 
 | Term | Definition | Code Usage |
 |------|------------|------------|
-| [Term] | [Definition] | [How to use in code] |
+| Brand | 被追踪的品牌实体 | `Brand`, `brand_id` |
+| BrandMention | AI 回复中的品牌提及记录 | `BrandMention`, `mention_id` |
+| Competitor | 竞争对手品牌 | `Competitor`, `competitor_id` |
+
+### Data-Related
+
+| Term | Definition | Code Usage |
+|------|------------|------------|
+| Conversation | 用户与 AI 的一次对话 | `Conversation`, `conversation_id` |
+| Query | 用户向 AI 提出的问题 | `query`, `user_query` |
+| Response | AI 生成的回复 | `response`, `ai_response` |
+
+### Analysis-Related
+
+| Term | Definition | Code Usage |
+|------|------------|------------|
+| VisibilityScore | 品牌可见度分数 | `VisibilityScore`, `visibility_score` |
+| SentimentScore | 情感分析分数 | `SentimentScore`, `sentiment_score` |
+| Citation | 引文记录 | `Citation`, `citation_id` |
+| Recommendation | 优化建议 | `Recommendation`, `recommendation_id` |
 
 ---
 
 ## Status Values
 
-### Order Status
+### Mention Type
+
+| Status | Meaning | Code Value |
+|--------|---------|------------|
+| direct | 直接提及品牌名 | `"direct"` |
+| indirect | 间接提及（通过产品等） | `"indirect"` |
+| comparison | 在对比中提及 | `"comparison"` |
+| negative | 负面语境中提及 | `"negative"` |
+
+### Sentiment Label
+
+| Status | Meaning | Score Range |
+|--------|---------|-------------|
+| positive | 正面情感 | 0.5 to 1.0 |
+| neutral | 中性情感 | -0.5 to 0.5 |
+| negative | 负面情感 | -1.0 to -0.5 |
+
+### Analysis Status
 
 | Status | Meaning | Can Transition To |
 |--------|---------|-------------------|
-| draft | Order not yet submitted | pending, cancelled |
-| pending | Awaiting processing | processing, cancelled |
-| processing | Being fulfilled | completed, failed |
-| completed | Successfully fulfilled | refunded |
-| cancelled | Cancelled before processing | - |
-| failed | Processing failed | pending (retry) |
-| refunded | Money returned | - |
+| pending | 等待分析 | processing, cancelled |
+| processing | 分析中 | completed, failed |
+| completed | 分析完成 | - |
+| failed | 分析失败 | pending (retry) |
 
-### [Entity] Status
+### Recommendation Priority
 
-| Status | Meaning | Can Transition To |
-|--------|---------|-------------------|
-| [status] | [meaning] | [transitions] |
+| Status | Meaning | Description |
+|--------|---------|-------------|
+| P0 | 最高优先级 | 必须立即执行 |
+| P1 | 高优先级 | 应该尽快执行 |
+| P2 | 中优先级 | 有时间时执行 |
 
 ---
 
@@ -60,11 +96,20 @@ This glossary ensures consistent terminology across code, documentation, and com
 
 | Term | Definition | Context |
 |------|------------|---------|
-| Repository | Data access layer | Code architecture |
-| Service | Business logic layer | Code architecture |
-| DTO | Data Transfer Object | API layer |
-| Entity | Domain object with identity | Domain layer |
-| Value Object | Immutable domain object | Domain layer |
+| Extension | Chrome 浏览器扩展 | Data collection |
+| Content Script | 扩展注入页面的脚本 | Extension architecture |
+| Service Worker | 扩展后台服务 | Extension architecture |
+| DOM | Document Object Model | Web page structure |
+| MutationObserver | DOM 变化监听 API | Data capture |
+
+---
+
+## Platform Names
+
+| Platform | Domain | Code Value |
+|----------|--------|------------|
+| ChatGPT | chat.openai.com | `"chatgpt"` |
+| Claude | claude.ai | `"claude"` |
 
 ---
 
@@ -72,12 +117,14 @@ This glossary ensures consistent terminology across code, documentation, and com
 
 | Abbr | Full Form | Context |
 |------|-----------|---------|
+| GEO | Generative Engine Optimization | Domain |
+| SEO | Search Engine Optimization | Related concept |
+| LLM | Large Language Model | AI technology |
+| NER | Named Entity Recognition | Analysis method |
+| PII | Personally Identifiable Information | Privacy |
 | API | Application Programming Interface | General |
-| CRUD | Create, Read, Update, Delete | Database operations |
-| DTO | Data Transfer Object | Code |
-| ID | Identifier | General |
-| TX | Transaction | Payment/Database |
-| UUID | Universally Unique Identifier | IDs |
+| DOM | Document Object Model | Web |
+| SSE | Server-Sent Events | Streaming |
 
 ---
 
@@ -87,57 +134,65 @@ This glossary ensures consistent terminology across code, documentation, and com
 
 | Context | Convention | Example |
 |---------|------------|---------|
-| Class names | PascalCase | `UserService` |
-| Function names | snake_case | `get_user_by_id` |
-| Variables | snake_case | `user_email` |
-| Constants | UPPER_SNAKE | `MAX_RETRY_COUNT` |
-| Database tables | snake_case, plural | `user_accounts` |
-| API endpoints | kebab-case | `/user-profiles` |
+| Class names | PascalCase | `VisibilityService` |
+| Function names | snake_case | `calculate_visibility_score` |
+| Variables | snake_case | `brand_mention` |
+| Constants | UPPER_SNAKE | `MAX_MENTIONS_PER_BATCH` |
+| Database tables | snake_case, plural | `brand_mentions` |
+| API endpoints | kebab-case | `/api/tracking/visibility-score` |
 
 ### In Documentation
 
 | Context | Convention | Example |
 |---------|------------|---------|
-| Referring to code | backticks | `UserService` |
-| File paths | backticks | `src/modules/user/` |
-| Concepts | normal text | user service |
+| Referring to code | backticks | `VisibilityService` |
+| File paths | backticks | `backend/src/modules/tracking/` |
+| Concepts | normal text | visibility score |
 
 ---
 
 ## Confusing Terms Clarification
 
-### User vs Account vs Profile
+### Mention vs Citation
 
-- **User**: The authentication entity (login credentials)
-- **Account**: The billing entity (subscription, payment)
-- **Profile**: The public-facing entity (display name, avatar)
+- **Mention**: AI 回复中提到的品牌或产品
+- **Citation**: AI 回复中引用的外部来源（URL、网站等）
 
-One User has one Account and one Profile.
+### Visibility vs Ranking
 
-### [Term A] vs [Term B]
+- **Visibility**: 绝对可见度分数 (0-100)
+- **Ranking**: 与竞争对手对比的相对排名
 
-- **[Term A]**: [When to use this]
-- **[Term B]**: [When to use this]
+### Query vs Prompt
+
+- **Query**: 用户向 AI 提出的问题（本项目使用）
+- **Prompt**: AI 系统提示词（内部使用）
+
+### Topic vs Keyword
+
+- **Topic**: 高层次的主题分类
+- **Keyword**: 具体的搜索/查询词
 
 ---
 
 ## Domain-Specific Jargon
 
-Terms specific to this industry/domain:
-
 | Term | Definition | Example |
 |------|------------|---------|
-| [Industry term] | [What it means in this context] | [Example usage] |
+| Share of Voice | 品牌在行业中的相对曝光占比 | "Brand A has 30% share of voice" |
+| Sentiment Drift | 情感分数随时间的变化 | "Positive sentiment drift over Q4" |
+| Citation Authority | 引用来源的权威性评分 | ".gov sources have high authority" |
+| llms.txt | AI 索引优化文件格式 | Similar to robots.txt |
 
 ---
 
 ## Deprecated Terms
 
-Terms that should no longer be used:
-
 | Deprecated | Use Instead | Reason |
 |------------|-------------|--------|
-| [old term] | [new term] | [why changed] |
+| exposure | visibility | 统一术语 |
+| reference | mention (for brands) | 区分品牌提及和引文 |
+| source | citation | 更准确 |
 
 ---
 

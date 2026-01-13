@@ -1,12 +1,12 @@
-# Agent Project: [AGENT_NAME]
+# Agent Project: GEO
 
 > Solo Agent Agile Template - Build AI Agents powered by Claude Code
 
 ## Quick Context
 
-[One sentence: What does this Agent do and who is it for?]
+GEO（生成式引擎优化）平台，通过浏览器扩展收集真实用户 AI 交互数据，提供品牌在 AI 回复中的可见度追踪、竞争分析和优化建议，帮助品牌营销人员、SEO 专家优化其在 AI 生成内容中的曝光度。
 
-**Architecture**: React Frontend → FastAPI Backend → Claude Code CLI → Claude API
+**Architecture**: React Frontend → FastAPI Backend → Claude Code CLI → Claude API + Chrome Extension
 
 ## Key Files
 
@@ -17,6 +17,11 @@
 | Claude Code Driver | @backend/src/modules/agent/driver.py |
 | Chat API Routes | @backend/src/modules/chat/router.py |
 | Chat UI Components | @frontend/src/components/chat/ |
+| Tracking Module | @backend/src/modules/tracking/ |
+| Analysis Module | @backend/src/modules/analysis/ |
+| Citation Module | @backend/src/modules/citation/ |
+| Optimization Module | @backend/src/modules/optimization/ |
+| Browser Extension | @extension/ |
 | Current Status | @STATUS.md |
 | Roadmap | @ROADMAP.md |
 
@@ -49,6 +54,22 @@ backend/
           system.md         # 系统提示词 (重要!)
       chat/
         router.py           # Chat API 路由
+      tracking/             # 追踪模块
+        service.py          # 可见度/排名追踪服务
+        models.py           # 追踪数据模型
+      analysis/             # 分析引擎模块
+        service.py          # 竞争分析/情感/关键词服务
+      citation/             # 引文模块
+        service.py          # 引文发现与网站分析
+      optimization/         # 优化建议模块
+        service.py          # 优化建议 + llms.txt 生成
+
+extension/                  # Chrome 浏览器扩展
+  manifest.json
+  src/
+    background.ts           # 后台脚本
+    content.ts              # 内容脚本
+    popup/                  # 弹窗 UI
 
 frontend/
   src/
@@ -57,16 +78,16 @@ frontend/
     hooks/
       useChat.ts            # SSE 流式 hook
     pages/
-      HomePage.tsx          # 聊天界面
+      HomePage.tsx          # 仪表盘主页
 ```
 
 ## Current Focus
 
 > Update this section frequently
 
-**Epic**: [Current Epic Name]
-**Task**: [Current Task]
-**Status**: [In Progress / Blocked / Done]
+**Epic**: 01 - 浏览器扩展与数据收集
+**Task**: 项目初始化与配置
+**Status**: In Progress
 
 ## Agent Configuration
 
@@ -95,6 +116,19 @@ curl -N -X POST http://localhost:8000/api/chat/message \
 
 # Reload prompt
 curl -X POST http://localhost:8000/api/chat/admin/reload-prompt
+
+# Upload tracking data (from extension)
+curl -X POST http://localhost:8000/api/tracking/upload \
+  -H "Content-Type: application/json" \
+  -d '{"query": "...", "response": "...", "platform": "chatgpt"}'
+
+# Get visibility report
+curl http://localhost:8000/api/analysis/visibility?brand=example
+
+# Analyze website
+curl -X POST http://localhost:8000/api/citation/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com"}'
 ```
 
 ## Gotchas
@@ -102,13 +136,11 @@ curl -X POST http://localhost:8000/api/chat/admin/reload-prompt
 - Claude Code CLI must be installed: `npm install -g @anthropic-ai/claude-code`
 - ANTHROPIC_API_KEY must be set in `.env`
 - Each session creates a workspace in `AGENT_WORKSPACE_DIR`
+- Browser extension requires Chrome developer mode for local testing
 
 ## Quick Start for New Session
 
 ```bash
-# For NEW projects - initialize based on requirements
-/project:init [describe your agent]
-
 # For EXISTING projects - load current context
 /project:context
 

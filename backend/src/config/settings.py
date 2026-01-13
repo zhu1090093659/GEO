@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     )
 
     # Application
-    app_name: str = "[AGENT_NAME]"
+    app_name: str = "GEO"
     app_env: str = "development"
     debug: bool = True
     
@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
     
-    # Database
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/app"
+    # Database (MVP uses SQLite)
+    database_url: str = "sqlite+aiosqlite:///./geo.db"
     db_pool_size: int = 5
     db_echo: bool = False
     

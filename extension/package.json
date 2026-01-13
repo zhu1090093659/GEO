@@ -1,0 +1,18 @@
+{
+  "name": "geo-extension",
+  "version": "0.1.0",
+  "description": "GEO Browser Extension - Track brand visibility in AI responses",
+  "private": true,
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build",
+    "lint": "eslint src --ext .ts",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.260",
+    "eslint": "^8.57.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.12"
+  }
+}

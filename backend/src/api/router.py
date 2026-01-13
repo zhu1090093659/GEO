@@ -3,6 +3,12 @@ API Router - aggregates all API routes
 """
 from fastapi import APIRouter
 
+from src.modules.chat.router import router as chat_router
+from src.modules.tracking.router import router as tracking_router
+from src.modules.analysis.router import router as analysis_router
+from src.modules.citation.router import router as citation_router
+from src.modules.optimization.router import router as optimization_router
+
 api_router = APIRouter()
 
 
@@ -13,11 +19,17 @@ async def ping():
     return {"message": "pong"}
 
 
+@api_router.get("/health")
+async def health():
+    """Health check endpoint for monitoring."""
+    return {"status": "healthy", "service": "GEO API"}
+
+
 # Chat routes (Agent interaction)
-from src.modules.chat.router import router as chat_router
 api_router.include_router(chat_router, tags=["chat"])
 
-
-# Example: Include other module routers
-# from src.modules.user.api import router as user_router
-# api_router.include_router(user_router, prefix="/users", tags=["users"])
+# GEO Core modules
+api_router.include_router(tracking_router, tags=["tracking"])
+api_router.include_router(analysis_router, tags=["analysis"])
+api_router.include_router(citation_router, tags=["citation"])
+api_router.include_router(optimization_router, tags=["optimization"])
