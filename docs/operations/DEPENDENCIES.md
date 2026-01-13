@@ -1,217 +1,319 @@
-# Dependencies
+# GEO Dependencies
 
 ## Overview
 
-This document explains the third-party dependencies used in this project, why they were chosen, and any important notes about their usage.
+This document lists all dependencies used in the GEO project with their versions and purposes.
 
 ---
 
-## Dependency Philosophy
+## Backend Dependencies
 
-1. **Minimize dependencies**: Only add what's truly needed
-2. **Prefer well-maintained packages**: Active development, good documentation
-3. **Pin versions**: Use exact versions for reproducibility
-4. **Document choices**: Explain why each dependency was chosen
+### Production Dependencies
 
----
+**File**: `backend/requirements.txt`
 
-## Core Dependencies
-
-### [Framework Name]
-
-**Package**: `[package-name]`
-**Version**: `[version]`
-**Purpose**: Web framework / ORM / etc.
-**Documentation**: [link]
-
-**Why chosen**:
-- [Reason 1]
-- [Reason 2]
-
-**Alternatives considered**:
-| Alternative | Why not chosen |
-|-------------|----------------|
-| [Package] | [Reason] |
-
----
-
-### Database
-
-**Package**: `[package-name]`
-**Version**: `[version]`
-**Purpose**: Database driver / ORM
-
-**Configuration notes**:
-```python
-# Important configuration settings
-POOL_SIZE = 5
-MAX_OVERFLOW = 10
-```
-
----
-
-### Authentication
-
-**Package**: `[package-name]`
-**Version**: `[version]`
-**Purpose**: JWT / OAuth / etc.
-
-**Security notes**:
-- [Important security consideration]
-
----
-
-## Development Dependencies
-
-### Testing
+#### Web Framework
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| pytest | [ver] | Test runner |
-| pytest-cov | [ver] | Coverage reporting |
-| pytest-asyncio | [ver] | Async test support |
+| fastapi | 0.115.0 | Async web framework |
+| uvicorn[standard] | 0.30.6 | ASGI server |
+| pydantic | 2.9.0 | Data validation |
+| pydantic-settings | 2.5.0 | Settings management |
 
-### Linting & Formatting
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| black | [ver] | Code formatter |
-| ruff | [ver] | Linter |
-| mypy | [ver] | Type checker |
-
-### Development Tools
+#### Database
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| [package] | [ver] | [purpose] |
+| sqlalchemy | 2.0.35 | ORM and database toolkit |
+| aiosqlite | 0.20.0 | Async SQLite driver |
+| alembic | 1.13.3 | Database migrations |
+| greenlet | 3.1.1 | SQLAlchemy async support |
+
+#### Authentication
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| python-jose[cryptography] | 3.3.0 | JWT token handling |
+| passlib[bcrypt] | 1.7.4 | Password hashing |
+
+#### HTTP & Utilities
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| httpx | 0.27.2 | Async HTTP client |
+| python-multipart | 0.0.9 | Form data parsing |
+| python-dotenv | 1.0.1 | Environment file loading |
+
+### Development Dependencies
+
+**File**: `backend/requirements-dev.txt`
+
+| Package | Purpose |
+|---------|---------|
+| pytest | Testing framework |
+| pytest-asyncio | Async test support |
+| pytest-cov | Coverage reporting |
+| ruff | Linting and formatting |
+| mypy | Type checking |
+| httpx | Test client |
+
+---
+
+## Frontend Dependencies
+
+### Production Dependencies
+
+**File**: `frontend/package.json`
+
+#### Core
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| react | 18.x | UI framework |
+| react-dom | 18.x | React DOM rendering |
+| react-router-dom | 6.x | Client-side routing |
+
+#### Styling
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| tailwindcss | 3.x | Utility-first CSS |
+| postcss | 8.x | CSS processing |
+| autoprefixer | 10.x | CSS vendor prefixes |
+
+#### Build
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| vite | 5.x | Build tool and dev server |
+| typescript | 5.x | Type safety |
+
+### Development Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| @types/react | React type definitions |
+| @types/react-dom | React DOM types |
+| eslint | Linting |
+| prettier | Code formatting |
+
+---
+
+## Extension Dependencies
+
+### Production Dependencies
+
+**File**: `extension/package.json`
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| typescript | 5.x | Type safety |
+
+### Build Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| vite | Build tool |
+| @crxjs/vite-plugin | Chrome extension plugin |
 
 ---
 
 ## External Services
 
-### [Service Name]
+### Required
 
-**SDK**: `[package-name]`
-**Version**: `[version]`
-**Purpose**: [What we use it for]
-**Documentation**: [link]
+| Service | Purpose | Documentation |
+|---------|---------|---------------|
+| Anthropic Claude API | AI analysis and agent | https://docs.anthropic.com |
 
-**Usage pattern**:
-```python
-from [package] import Client
+### Optional (Production)
 
-client = Client(api_key=config.API_KEY)
-```
-
-**Rate limits**:
-| Tier | Limit |
-|------|-------|
-| Free | 100/min |
-| Pro | 1000/min |
+| Service | Purpose | Alternative |
+|---------|---------|-------------|
+| PostgreSQL | Production database | SQLite (dev) |
+| Redis | Caching (planned) | None |
 
 ---
 
-## Version Constraints
+## System Requirements
 
-### Why we pin versions
+### Runtime
 
-All dependencies are pinned to exact versions to ensure:
-- Reproducible builds
-- No surprise breaking changes
-- Security audit trail
+| Requirement | Minimum | Recommended |
+|-------------|---------|-------------|
+| Python | 3.11 | 3.12 |
+| Node.js | 18 | 20 LTS |
+| Bun | 1.0 | Latest |
 
-### Updating dependencies
+### Development Tools
+
+| Tool | Purpose | Installation |
+|------|---------|--------------|
+| Git | Version control | https://git-scm.com |
+| Make | Task automation | Pre-installed (Unix) |
+| Docker | Containerization | https://docker.com |
+
+---
+
+## Updating Dependencies
+
+### Backend
 
 ```bash
-# Check for updates
-make check-deps
+cd backend
+source .venv/bin/activate
 
-# Update a specific package
-pip install --upgrade [package]
+# Update all packages
+pip install --upgrade -r requirements.txt
 
-# Update all (with testing)
-make update-deps
-make test
+# Update specific package
+pip install --upgrade fastapi
+
+# Regenerate requirements (if using pip-tools)
+pip-compile requirements.in
 ```
 
----
-
-## Known Issues
-
-### [Package Name]
-
-**Issue**: [Description of known issue]
-**Workaround**: [How we work around it]
-**Tracking**: [Link to issue]
-
----
-
-## Security Considerations
-
-### Vulnerability Scanning
+### Frontend
 
 ```bash
-# Scan for vulnerabilities
-make security-scan
+cd frontend
 
-# Or using pip-audit
-pip-audit
+# Update all packages
+bun update
+
+# Update specific package
+bun add react@latest
+
+# Check for outdated
+bun outdated
 ```
 
-### Security Updates
+### Extension
 
-Critical security updates should be applied immediately:
+```bash
+cd extension
 
-1. Check vulnerability details
-2. Test update in development
-3. Deploy to staging
-4. Deploy to production
+# Update all packages
+bun update
+```
 
 ---
 
-## License Compliance
+## Security Auditing
 
-All dependencies must have compatible licenses.
-
-| License | Compatible | Notes |
-|---------|------------|-------|
-| MIT | Yes | Most permissive |
-| Apache 2.0 | Yes | Patent grant included |
-| BSD | Yes | Similar to MIT |
-| GPL | Caution | Copyleft requirements |
-| AGPL | No | Too restrictive |
-
-### Checking licenses
+### Backend
 
 ```bash
-# List all licenses
-pip-licenses --format=markdown
+# Check for vulnerabilities
+pip audit
 
-# Check for problematic licenses
-pip-licenses --fail-on="GPL"
+# Or use safety
+pip install safety
+safety check
 ```
+
+### Frontend / Extension
+
+```bash
+# Check for vulnerabilities
+bun audit
+
+# Fix automatically (when possible)
+bun audit --fix
+```
+
+---
+
+## Dependency Lock Files
+
+| Component | Lock File | Purpose |
+|-----------|-----------|---------|
+| Backend | requirements.txt (pinned) | Reproducible installs |
+| Frontend | bun.lockb | Exact versions |
+| Extension | bun.lockb | Exact versions |
 
 ---
 
 ## Adding New Dependencies
 
-Before adding a new dependency:
+### Backend
 
-1. **Justify the need**: Can we implement it ourselves?
-2. **Evaluate options**: Compare alternatives
-3. **Check maintenance**: Last commit, open issues, contributors
-4. **Check license**: Must be compatible
-5. **Security review**: Check for known vulnerabilities
-6. **Document**: Add to this file with rationale
+1. Add to `requirements.txt` with version pin:
+   ```
+   new-package==1.2.3
+   ```
+
+2. Install:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. If dev-only, add to `requirements-dev.txt`
+
+### Frontend / Extension
+
+1. Install with Bun:
+   ```bash
+   bun add package-name
+   # or for dev dependency
+   bun add -d package-name
+   ```
+
+2. Lock file updated automatically
 
 ---
 
-## Dependency Tree
+## Version Pinning Strategy
 
-```bash
-# View full dependency tree
-pipdeptree
+### Backend
 
-# Check for conflicts
-pipdeptree --warn fail
+- **Pin exact versions** in requirements.txt for reproducibility
+- Update quarterly or when security issues found
+- Test thoroughly after updates
+
+### Frontend
+
+- **Use caret (^)** for minor version updates
+- Lock file ensures reproducibility
+- Update more frequently (monthly)
+
+---
+
+## Known Compatibility Issues
+
+| Package | Issue | Workaround |
+|---------|-------|------------|
+| aiosqlite | Requires greenlet for SQLAlchemy 2.0 | Include greenlet in deps |
+| pydantic v2 | Breaking changes from v1 | Use v2 syntax throughout |
+
+---
+
+## Dependency Diagram
+
+```mermaid
+flowchart TB
+    subgraph backend [Backend]
+        FastAPI --> Pydantic
+        FastAPI --> Uvicorn
+        SQLAlchemy --> Alembic
+        SQLAlchemy --> aiosqlite
+    end
+    
+    subgraph frontend [Frontend]
+        React --> ReactDOM
+        React --> TailwindCSS
+        Vite --> TypeScript
+    end
+    
+    subgraph extension [Extension]
+        ExtTS[TypeScript]
+        ExtVite[Vite]
+    end
+    
+    subgraph external [External]
+        Claude[Claude API]
+    end
+    
+    backend --> Claude
 ```

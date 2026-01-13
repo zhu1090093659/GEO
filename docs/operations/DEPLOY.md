@@ -1,12 +1,12 @@
-# Deployment Guide
+# GEO Deployment Guide
 
 ## Deployment Overview
 
 | Environment | Branch | Auto-Deploy | URL |
 |-------------|--------|-------------|-----|
 | Development | feature/* | No | localhost:8000 |
-| Staging | develop | Yes | staging.[domain] |
-| Production | main | Manual | [domain] |
+| Staging | develop | Yes (planned) | staging.geo-app.com |
+| Production | main | Manual | geo-app.com |
 
 ---
 
@@ -22,61 +22,92 @@ make deploy-prod
 
 ---
 
-## Deployment Checklist
-
-### Pre-Deployment
-
-- [ ] All tests passing
-- [ ] Code reviewed and approved
-- [ ] Changelog updated
-- [ ] Database migrations tested
-- [ ] Environment variables configured
-- [ ] Dependencies up to date
-
-### Post-Deployment
-
-- [ ] Health check passing
-- [ ] Smoke tests passing
-- [ ] Monitoring alerts configured
-- [ ] Team notified
-
----
-
 ## Deployment Methods
 
-### Method 1: CI/CD Pipeline (Recommended)
+### Method 1: Docker Compose (Recommended for MVP)
 
-Pipeline runs automatically on merge to deploy branches.
+```bash
+# Build images
+docker-compose build
 
+# Start all services
+docker-compose up -d
+
+# Check status
+docker-compose ps
+
+# View logs
+docker-compose logs -f backend
+```
+
+**docker-compose.yml**:
 ```yaml
-# .github/workflows/deploy.yml
-deploy:
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v4
-    - name: Run tests
-      run: make test
-    - name: Build
-      run: make build
-    - name: Deploy
-      run: make deploy-${{ env.ENVIRONMENT }}
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./data/geo.db
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
 ```
 
 ### Method 2: Manual Deploy
 
 ```bash
-# 1. Build application
-make build
+# 1. Build frontend
+cd frontend && bun run build
 
-# 2. Run migrations
-make db-migrate-prod
+# 2. Build backend image
+cd backend && docker build -t geo-backend:latest .
 
-# 3. Deploy
-make deploy-prod
+# 3. Run migrations
+docker run geo-backend:latest alembic upgrade head
 
-# 4. Verify
-make health-check-prod
+# 4. Deploy backend
+docker run -d \
+  -p 8000:8000 \
+  -e DATABASE_URL="..." \
+  -e ANTHROPIC_API_KEY="..." \
+  geo-backend:latest
+
+# 5. Serve frontend (nginx/CDN)
+# Copy frontend/dist/* to web server
 ```
+
+---
+
+## Deployment Checklist
+
+### Pre-Deployment
+
+- [ ] All tests passing (`make test`)
+- [ ] Code reviewed and approved
+- [ ] Environment variables configured
+- [ ] Database migrations tested
+- [ ] API documentation updated
+- [ ] CHANGELOG updated
+
+### Post-Deployment
+
+- [ ] Health check passing (`/health`)
+- [ ] API docs accessible (`/api/docs`)
+- [ ] Sample API calls working
+- [ ] Monitoring alerts configured
+- [ ] Team notified
 
 ---
 
@@ -86,22 +117,23 @@ make health-check-prod
 
 ```bash
 # Set environment variables
-[PLATFORM] secrets set DATABASE_URL="..."
-[PLATFORM] secrets set SECRET_KEY="..."
-
-# Deploy
-[PLATFORM] deploy --env staging
+export APP_ENV=staging
+export DEBUG=false
+export DATABASE_URL=postgresql+asyncpg://user:pass@staging-db:5432/geo
+export SECRET_KEY=$(openssl rand -base64 32)
+export ANTHROPIC_API_KEY=sk-ant-xxx
+export CORS_ORIGINS='["https://staging.geo-app.com"]'
 ```
 
 ### Production
 
 ```bash
-# Set environment variables (use secrets manager)
-[PLATFORM] secrets set DATABASE_URL="..."
-[PLATFORM] secrets set SECRET_KEY="..."
-
-# Deploy with zero downtime
-[PLATFORM] deploy --env production --strategy rolling
+export APP_ENV=production
+export DEBUG=false
+export DATABASE_URL=postgresql+asyncpg://user:pass@prod-db:5432/geo
+export SECRET_KEY=<from-secrets-manager>
+export ANTHROPIC_API_KEY=<from-secrets-manager>
+export CORS_ORIGINS='["https://geo-app.com"]'
 ```
 
 ---
@@ -111,30 +143,77 @@ make health-check-prod
 ### Before Deployment
 
 ```bash
-# Generate migration
-make db-migration "description"
+# Generate migration (if needed)
+cd backend
+alembic revision --autogenerate -m "description"
 
 # Test migration locally
-make db-migrate
-make db-rollback
-make db-migrate
-
-# Test migration on staging
-make db-migrate-staging
+alembic upgrade head
+alembic downgrade -1
+alembic upgrade head
 ```
 
 ### During Deployment
 
-Migrations run automatically as part of deployment.
+```bash
+# Run migrations in production
+docker run geo-backend:latest alembic upgrade head
+
+# Or with docker-compose
+docker-compose exec backend alembic upgrade head
+```
 
 ### Rollback
 
 ```bash
 # Rollback last migration
-make db-rollback-prod
+alembic downgrade -1
 
 # Rollback to specific version
-make db-rollback-prod VERSION=xxx
+alembic downgrade abc123
+```
+
+---
+
+## Health Checks
+
+### Endpoint
+
+```bash
+curl https://your-domain.com/health
+
+# Expected response
+{"status": "healthy"}
+```
+
+### Docker Health Check
+
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
+```
+
+---
+
+## Monitoring
+
+### Key Metrics to Watch
+
+| Metric | Expected | Alert Threshold |
+|--------|----------|-----------------|
+| Response time (p95) | < 500ms | > 1000ms |
+| Error rate | < 1% | > 5% |
+| CPU usage | < 50% | > 80% |
+| Memory usage | < 70% | > 90% |
+
+### Logging
+
+```bash
+# View production logs
+docker logs geo-backend -f
+
+# Search for errors
+docker logs geo-backend 2>&1 | grep -i error
 ```
 
 ---
@@ -144,146 +223,134 @@ make db-rollback-prod VERSION=xxx
 ### Application Rollback
 
 ```bash
-# Rollback to previous version
-[PLATFORM] rollback --env production
+# Tag current version before deploy
+docker tag geo-backend:latest geo-backend:rollback
 
-# Rollback to specific version
-[PLATFORM] rollback --env production --version v1.2.3
+# If deploy fails, rollback
+docker stop geo-backend
+docker run -d --name geo-backend geo-backend:rollback
 ```
 
 ### Database Rollback
 
 ```bash
-# Only if absolutely necessary
-make db-rollback-prod
+# Only if necessary and migration is reversible
+docker-compose exec backend alembic downgrade -1
 
-# Note: Some migrations are not reversible
+# WARNING: Some migrations are not reversible
 ```
 
 ---
 
-## Monitoring After Deploy
+## Chrome Extension Deployment
 
-### Health Checks
-
-```bash
-# Check application health
-curl https://[domain]/health
-
-# Expected response
-{"status": "healthy", "version": "1.2.3"}
-```
-
-### Key Metrics to Watch
-
-| Metric | Expected | Alert Threshold |
-|--------|----------|-----------------|
-| Response time (p95) | < 200ms | > 500ms |
-| Error rate | < 0.1% | > 1% |
-| CPU usage | < 50% | > 80% |
-| Memory usage | < 70% | > 90% |
-
-### Logs
+### Build for Production
 
 ```bash
-# View deployment logs
-[PLATFORM] logs --env production --follow
-
-# Search for errors
-[PLATFORM] logs --env production --filter "level=error"
+cd extension
+bun run build
 ```
 
----
+### Submit to Chrome Web Store
 
-## Zero-Downtime Deployment
+1. Create ZIP of `extension/dist/`
+2. Go to Chrome Web Store Developer Dashboard
+3. Upload new version
+4. Submit for review
 
-### Strategy: Rolling Update
+### Local Distribution (Testing)
 
-```
-1. Start new instances with new version
-2. Wait for health checks to pass
-3. Gradually shift traffic to new instances
-4. Terminate old instances
-```
-
-### Strategy: Blue-Green
-
-```
-1. Deploy new version to "green" environment
-2. Run smoke tests on green
-3. Switch load balancer to green
-4. Keep blue as rollback option
-```
-
----
-
-## Hotfix Deployment
-
-For critical production issues:
-
-```bash
-# 1. Create hotfix branch from main
-git checkout -b hotfix/critical-fix main
-
-# 2. Make minimal fix
-# 3. Test thoroughly
-make test
-
-# 4. Deploy directly to production
-make deploy-prod-hotfix
-
-# 5. Merge back to main and develop
-git checkout main && git merge hotfix/critical-fix
-git checkout develop && git merge hotfix/critical-fix
-```
-
----
-
-## Deployment Troubleshooting
-
-### Build Fails
-
-```bash
-# Check build logs
-[PLATFORM] builds --env production
-
-# Common issues:
-# - Missing dependencies
-# - Incorrect Node/Python version
-# - Build script errors
-```
-
-### Deploy Fails
-
-```bash
-# Check deployment logs
-[PLATFORM] deployments --env production
-
-# Common issues:
-# - Health check fails
-# - Missing environment variables
-# - Database connection issues
-```
-
-### Post-Deploy Issues
-
-```bash
-# Immediate rollback if critical
-[PLATFORM] rollback --env production
-
-# Check error logs
-[PLATFORM] logs --env production --filter "level=error"
-
-# Check metrics dashboard
-# [Link to dashboard]
-```
+1. Share `extension/dist/` folder
+2. Users load via `chrome://extensions/` → "Load unpacked"
 
 ---
 
 ## Security Considerations
 
+### Secrets Management
+
 - Never commit secrets to repository
-- Use secrets manager for sensitive values
+- Use environment variables or secrets manager
 - Rotate secrets regularly
-- Limit deployment access to authorized personnel
-- Audit deployment logs
+- Use different secrets per environment
+
+### Recommended Secrets Managers
+
+| Platform | Service |
+|----------|---------|
+| AWS | Secrets Manager |
+| GCP | Secret Manager |
+| Azure | Key Vault |
+| Generic | HashiCorp Vault |
+
+### API Security
+
+- Enable HTTPS only in production
+- Configure proper CORS origins
+- Implement rate limiting (planned)
+- Add authentication (planned for v0.2)
+
+---
+
+## Scaling (Future)
+
+### Horizontal Scaling
+
+```yaml
+# docker-compose with replicas
+services:
+  backend:
+    deploy:
+      replicas: 3
+```
+
+### Database Scaling
+
+1. Migrate from SQLite to PostgreSQL
+2. Add connection pooling (pgbouncer)
+3. Consider read replicas for heavy read loads
+
+### Caching Layer
+
+1. Add Redis for caching
+2. Cache frequently accessed data:
+   - Visibility scores
+   - Topic lists
+   - Recommendation lists
+
+---
+
+## Troubleshooting Deployments
+
+### Build Fails
+
+```bash
+# Check Docker build logs
+docker-compose build --no-cache
+
+# Verify Dockerfile syntax
+docker build -t test ./backend
+```
+
+### Container Won't Start
+
+```bash
+# Check logs
+docker logs geo-backend
+
+# Common issues:
+# - Missing environment variables
+# - Port already in use
+# - Database connection failed
+```
+
+### Health Check Fails
+
+```bash
+# Check inside container
+docker exec -it geo-backend curl http://localhost:8000/health
+
+# Check network
+docker network ls
+docker network inspect geo_default
+```

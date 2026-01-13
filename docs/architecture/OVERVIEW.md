@@ -1,207 +1,343 @@
-# Architecture Overview
+# GEO Architecture Overview
 
 ## System Context
 
+GEO (Generative Engine Optimization) is a platform that helps brands track and optimize their visibility in AI-generated content. It collects real user interactions with AI platforms through a browser extension and provides analytics and optimization recommendations.
+
 ```mermaid
 flowchart LR
-    User([User]) --> Frontend[React Frontend]
-    Frontend <--> Backend[FastAPI Backend]
-    Backend <--> CC[Claude Code CLI]
-    CC <--> Claude[Claude API]
-    Backend <--> DB[(PostgreSQL)]
+    User([User]) --> Extension[Browser Extension]
+    Extension --> Backend[FastAPI Backend]
+    Backend <--> DB[(SQLite/PostgreSQL)]
+    Backend <--> Claude[Claude API]
+    Backend --> Frontend[React Frontend]
+    Frontend --> User
     
-    style CC fill:#a855f7,color:#fff
+    AIUser([AI User]) --> ChatGPT[ChatGPT]
+    AIUser --> ClaudeAI[Claude.ai]
+    Extension -.-> ChatGPT
+    Extension -.-> ClaudeAI
 ```
+
+---
 
 ## High-Level Architecture
 
 ```mermaid
 flowchart TB
-    subgraph Frontend["Frontend (React)"]
-        UI[Chat Interface]
-        Hook[useChat Hook]
-        SSE[SSE Stream Handler]
+    subgraph ext [Browser Extension]
+        Content[Content Scripts]
+        Background[Service Worker]
+        Popup[Popup UI]
     end
     
-    subgraph Backend["Backend (FastAPI)"]
-        API[Chat API Routes]
-        Service[Agent Service]
-        Driver[Claude Code Driver]
+    subgraph backend [Backend - FastAPI]
+        API[API Router]
+        subgraph modules [Business Modules]
+            Tracking[Tracking Module]
+            Analysis[Analysis Module]
+            Citation[Citation Module]
+            Optimization[Optimization Module]
+        end
+        subgraph agent [Agent System]
+            AgentService[Agent Service]
+            Driver[Claude Code Driver]
+        end
     end
     
-    subgraph Engine["Agent Engine"]
-        CLI[Claude Code CLI]
-        Workspace[Session Workspace]
+    subgraph storage [Data Storage]
+        DB[(SQLite DB)]
     end
     
-    subgraph External["External"]
-        Claude[Claude API]
+    subgraph frontend [Frontend - React]
+        Dashboard[Dashboard]
+        ChatUI[Chat Interface]
     end
     
-    UI --> Hook
-    Hook --> SSE
-    SSE <--> API
-    API --> Service
-    Service --> Driver
-    Driver --> CLI
-    CLI --> Workspace
-    CLI <--> Claude
+    Content --> Background
+    Background --> API
+    API --> Tracking
+    API --> Analysis
+    API --> Citation
+    API --> Optimization
+    Tracking --> DB
+    Analysis --> DB
+    Citation --> DB
+    Optimization --> DB
+    
+    API --> AgentService
+    AgentService --> Driver
+    Driver --> Claude[Claude API]
+    
+    Frontend --> API
 ```
 
-## Request Flow
+---
+
+## Data Collection Flow
+
+The primary data collection flow from browser extension to analytics:
 
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant F as Frontend
+    participant AI as AI Platform
+    participant E as Extension
     participant B as Backend
-    participant D as Driver
-    participant C as Claude Code
-    participant A as Claude API
+    participant D as Database
 
-    U->>F: Type message
-    F->>B: POST /api/chat/message
-    B->>D: execute(message, session_id)
-    D->>C: claude --print "message"
-    C->>A: API request
-    A-->>C: Stream response
-    C-->>D: JSON events
-    D-->>B: Yield events
-    B-->>F: SSE stream
-    F-->>U: Display response
+    U->>AI: Ask question
+    AI-->>U: Generate response
+    E->>E: Capture query + response
+    E->>E: Sanitize PII
+    E->>B: POST /tracking/upload
+    B->>B: Extract brand mentions
+    B->>B: Calculate visibility
+    B->>D: Store conversation + scores
+    B-->>E: Upload confirmation
 ```
+
+---
 
 ## Component Details
 
-### Frontend Components
+### Browser Extension
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| ChatWindow | `components/chat/ChatWindow.tsx` | Main chat container |
-| ChatMessage | `components/chat/ChatMessage.tsx` | Message bubble |
-| ChatInput | `components/chat/ChatInput.tsx` | Input field |
-| useChat | `hooks/useChat.ts` | SSE streaming hook |
+| Content Scripts | `extension/src/content/` | Capture AI conversations from ChatGPT/Claude |
+| Background Worker | `extension/src/background.ts` | Handle storage, API calls, scheduling |
+| Popup UI | `extension/src/popup/` | User consent, settings, data preview |
+| Config | `extension/src/config/` | DOM selectors for each AI platform |
 
-### Backend Modules
+**Supported Platforms**:
+- ChatGPT (chat.openai.com)
+- Claude (claude.ai)
 
-| Module | Location | Purpose |
-|--------|----------|---------|
-| Agent Driver | `modules/agent/driver.py` | Executes Claude Code CLI |
-| Agent Service | `modules/agent/service.py` | Manages prompts & sessions |
-| Chat Router | `modules/chat/router.py` | API endpoints |
+### Backend API
 
-### Claude Code Driver
+| Module | Endpoints | Purpose |
+|--------|-----------|---------|
+| Tracking | 8 | Conversation upload, visibility queries, rankings |
+| Analysis | 11 | Competitor comparison, sentiment, topics |
+| Citation | 5 | Citation discovery, website analysis |
+| Optimization | 7 | Recommendations, llms.txt generation |
+| Chat | 2 | AI agent interaction (SSE streaming) |
 
-The driver wraps Claude Code CLI:
+**Total**: 33+ API endpoints
 
-```python
-# Simplified flow
-async def execute(message, session_id):
-    cmd = [
-        "claude",
-        "--print", message,
-        "--output-format", "stream-json",
-        "--system-prompt", system_prompt,
-    ]
-    
-    process = await asyncio.create_subprocess_exec(*cmd, ...)
-    
-    async for line in process.stdout:
-        yield parse_event(line)
-```
+### Frontend
 
-## Session Management
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| Dashboard | `frontend/src/pages/HomePage.tsx` | Main analytics dashboard |
+| Chat Interface | `frontend/src/components/chat/` | Agent interaction UI |
+| Hooks | `frontend/src/hooks/` | API and SSE streaming hooks |
+
+### Database
+
+MVP uses SQLite with async support. Database schema includes 16+ tables:
+
+| Category | Tables |
+|----------|--------|
+| Tracking | conversations, messages, brands, brand_mentions, visibility_scores |
+| Analysis | competitor_groups, comparison_results, sentiment_analyses, topics, keywords |
+| Citation | citations, citation_sources, website_analyses |
+| Optimization | recommendations, llms_txt_results, optimization_stats |
+
+---
+
+## Request Flow Examples
+
+### Conversation Upload (Extension → Backend)
 
 ```mermaid
-flowchart TD
-    A[New Message] --> B{Session Exists?}
-    B -->|No| C[Create Session]
-    C --> D[Create Workspace]
-    D --> E[Execute Claude Code]
-    B -->|Yes| E
-    E --> F[Stream Response]
-    F --> G{More Messages?}
-    G -->|Yes| E
-    G -->|No| H[Session Idle]
-    H -->|Timeout| I[Cleanup Workspace]
+sequenceDiagram
+    participant E as Extension
+    participant R as API Router
+    participant T as Tracking Service
+    participant D as Database
+
+    E->>R: POST /api/tracking/upload
+    R->>T: upload_conversations(data)
+    T->>T: Validate conversations
+    T->>T: Extract brand mentions
+    T->>D: Insert conversations
+    T->>D: Insert messages
+    T->>D: Insert brand_mentions
+    T-->>R: UploadResponse
+    R-->>E: 200 OK
 ```
 
-## Data Flow
+### Visibility Query
 
-### Message Format
+```mermaid
+sequenceDiagram
+    participant F as Frontend
+    participant R as API Router
+    participant T as Tracking Service
+    participant C as Calculator
+    participant D as Database
 
-```typescript
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-  toolUse?: {
-    tool: string;
-    input: object;
-    output?: string;
-  }[];
-}
+    F->>R: GET /api/tracking/visibility?brand=X
+    R->>T: get_visibility(brand, filters)
+    T->>D: Query brand_mentions
+    T->>D: Query visibility_scores
+    T->>C: Calculate current score
+    C-->>T: Score + trend data
+    T-->>R: VisibilityResponse
+    R-->>F: 200 OK
 ```
 
-### SSE Events
+### AI Agent Chat (SSE Streaming)
 
+```mermaid
+sequenceDiagram
+    participant F as Frontend
+    participant R as Chat Router
+    participant A as Agent Service
+    participant D as Claude Code Driver
+    participant C as Claude API
+
+    F->>R: POST /api/chat/message
+    R->>A: execute(message, session_id)
+    A->>D: run_claude_code(prompt)
+    D->>C: claude --print "..."
+    loop Streaming
+        C-->>D: JSON event
+        D-->>A: Parsed event
+        A-->>R: Yield event
+        R-->>F: SSE: event data
+    end
+    R-->>F: SSE: done
 ```
-event: text
-data: {"type": "text", "content": "Hello..."}
 
-event: tool_use
-data: {"type": "tool_use", "tool": "Bash", "input": {"command": "ls"}}
-
-event: tool_result
-data: {"type": "tool_result", "tool": "Bash", "output": "file1 file2"}
-
-event: done
-data: {"type": "done"}
-```
+---
 
 ## Security Considerations
 
-### Workspace Isolation
+### Data Privacy
 
-Each session runs in an isolated directory:
+| Concern | Mitigation |
+|---------|------------|
+| PII in conversations | Sanitization before upload (email, phone removal) |
+| User consent | Explicit opt-in required, pause/disable options |
+| Data retention | Raw data: 30 days, Aggregated: 1 year |
 
-```
-/tmp/agent_workspaces/
-├── session-uuid-1/
-├── session-uuid-2/
-└── session-uuid-3/
-```
+### Extension Security
 
-### Tool Restrictions
+| Concern | Mitigation |
+|---------|------------|
+| DOM access | Limited to specific AI platform domains |
+| Data transmission | HTTPS only, local preview before upload |
+| Permissions | Minimal required permissions in manifest |
 
-Control which Claude Code tools are available:
+### API Security
 
-```python
-allowed_tools = [
-    "Read",      # Read files
-    "Write",     # Write files
-    "Bash",      # Run commands
-    # Omit dangerous tools
-]
-```
+| Concern | Mitigation |
+|---------|------------|
+| Authentication | JWT tokens (planned for v0.2) |
+| Rate limiting | Per-IP rate limits (planned) |
+| Input validation | Pydantic schema validation |
+| SQL injection | SQLAlchemy ORM with parameterized queries |
 
-### Timeouts
-
-- Request timeout: 5 minutes default
-- Max turns: 10 iterations
-- Session cleanup: automatic on end
+---
 
 ## Scaling Considerations
 
-### Current Limits
+### Current Architecture (MVP)
 
-- One Claude Code process per request
-- Workspace disk usage per session
-- API rate limits
+- Single SQLite database (async with aiosqlite)
+- Single backend instance
+- No caching layer
+- No message queue
 
-### Future Scaling
+### Future Scaling (v1.0+)
 
-- Session pooling
-- Workspace caching
-- Distributed execution
+| Component | Current | Future |
+|-----------|---------|--------|
+| Database | SQLite | PostgreSQL |
+| Cache | None | Redis |
+| Queue | None | Redis/Celery |
+| Deployment | Single instance | Kubernetes |
+| CDN | None | CloudFront/Cloudflare |
+
+### Performance Targets
+
+| Metric | MVP Target | Production Target |
+|--------|------------|-------------------|
+| API response (p95) | < 500ms | < 200ms |
+| Upload throughput | 100/min | 1000/min |
+| Concurrent users | 10 | 1000 |
+
+---
+
+## Technology Stack
+
+### Backend
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Python | 3.11+ | Runtime |
+| FastAPI | 0.115 | Web framework |
+| SQLAlchemy | 2.0 | ORM |
+| Alembic | 1.13 | Migrations |
+| Pydantic | 2.9 | Validation |
+| aiosqlite | 0.20 | Async SQLite |
+
+### Frontend
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| React | 18 | UI framework |
+| TypeScript | 5.x | Type safety |
+| TailwindCSS | 3.x | Styling |
+| Vite | 5.x | Build tool |
+
+### Extension
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| TypeScript | 5.x | Type safety |
+| Manifest V3 | - | Chrome extension |
+| Vite | 5.x | Build tool |
+
+### Infrastructure
+
+| Technology | Purpose |
+|------------|---------|
+| Docker | Containerization |
+| Docker Compose | Local orchestration |
+| Make | Task automation |
+
+---
+
+## Directory Structure
+
+```
+GEO/
+├── backend/
+│   ├── src/
+│   │   ├── api/           # API router
+│   │   ├── config/        # Settings, database
+│   │   └── modules/       # Business modules
+│   │       ├── tracking/
+│   │       ├── analysis/
+│   │       ├── citation/
+│   │       ├── optimization/
+│   │       ├── agent/
+│   │       └── chat/
+│   ├── alembic/           # Migrations
+│   └── tests/
+├── frontend/
+│   └── src/
+│       ├── components/
+│       ├── hooks/
+│       └── pages/
+├── extension/
+│   └── src/
+│       ├── content/       # Platform-specific scrapers
+│       ├── popup/         # Extension UI
+│       └── utils/
+└── docs/                  # Documentation
+```

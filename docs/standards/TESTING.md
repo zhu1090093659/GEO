@@ -1,99 +1,320 @@
-# Testing Standards
+# GEO Testing Guide
 
 ## Testing Philosophy
 
-1. **Test behavior, not implementation**: Tests should verify what code does, not how
-2. **Fast feedback**: Unit tests should run in milliseconds
-3. **Reliable**: No flaky tests, no external dependencies
-4. **Readable**: Tests serve as documentation
+1. **Test behavior, not implementation** - Focus on what the code does, not how
+2. **Fast feedback** - Tests should run quickly for rapid iteration
+3. **Reliable** - Tests should be deterministic and not flaky
+4. **Maintainable** - Tests should be easy to understand and update
 
 ---
 
-## Test Pyramid
+## Test Structure
 
-```mermaid
-%%{init: {'theme': 'default'}}%%
-graph TB
-    subgraph Pyramid["Test Pyramid"]
-        E2E["E2E Tests<br/>(few, slow)"]
-        INT["Integration Tests<br/>(some)"]
-        UNIT["Unit Tests<br/>(many, fast)"]
-    end
+### Directory Layout
+
+```
+backend/
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py          # Shared fixtures
+│   ├── unit/                 # Unit tests
+│   │   ├── modules/
+│   │   │   ├── tracking/
+│   │   │   │   ├── test_service.py
+│   │   │   │   ├── test_calculator.py
+│   │   │   ├── analysis/
+│   │   │   ├── citation/
+│   │   │   └── optimization/
+│   ├── integration/          # Integration tests
+│   │   ├── test_tracking_api.py
+│   │   ├── test_analysis_api.py
+│   │   └── test_full_flow.py
+│   └── e2e/                  # End-to-end tests
+│       └── test_upload_flow.py
+```
+
+### Test Types
+
+| Type | Scope | Speed | Dependencies |
+|------|-------|-------|--------------|
+| Unit | Single function/class | Fast | Mocked |
+| Integration | Multiple modules | Medium | Database |
+| E2E | Full flow | Slow | All services |
+
+---
+
+## Running Tests
+
+### All Tests
+
+```bash
+make test
+# or
+cd backend && pytest tests/ -v
+```
+
+### Specific Test Types
+
+```bash
+# Unit tests only
+make test-unit
+# or
+pytest tests/unit/ -v
+
+# Integration tests only
+make test-integration
+# or
+pytest tests/integration/ -v
+```
+
+### Single Test File
+
+```bash
+pytest tests/unit/modules/tracking/test_service.py -v
+```
+
+### Single Test Function
+
+```bash
+pytest tests/unit/modules/tracking/test_service.py::test_upload_conversations -v
+```
+
+### With Coverage
+
+```bash
+pytest tests/ -v --cov=src --cov-report=term-missing
+```
+
+---
+
+## Test Configuration
+
+### conftest.py
+
+```python
+# backend/tests/conftest.py
+import pytest
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+
+from src.config.database import Base
+
+
+@pytest.fixture
+async def db_session():
+    """Create test database session."""
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        echo=False
+    )
     
-    E2E --- INT
-    INT --- UNIT
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     
-    style E2E fill:#ff6b6b,color:#fff
-    style INT fill:#ffd93d,color:#000
-    style UNIT fill:#6bcb77,color:#fff
+    async_session = sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
+    
+    async with async_session() as session:
+        yield session
+    
+    await engine.dispose()
+
+
+@pytest.fixture
+def sample_conversation():
+    """Sample conversation data for testing."""
+    return {
+        "id": "test-conv-1",
+        "session_id": "test-session",
+        "platform": "chatgpt",
+        "messages": [
+            {"role": "user", "content": "What is Salesforce?"},
+            {"role": "assistant", "content": "Salesforce is a CRM platform..."}
+        ],
+        "captured_at": "2026-01-13T10:00:00Z"
+    }
 ```
 
-| Type | Count | Speed | Scope |
-|------|-------|-------|-------|
-| Unit | Many | Fast (<100ms) | Single function/class |
-| Integration | Some | Medium (<5s) | Module boundaries |
-| E2E | Few | Slow (<30s) | Full user flows |
+### pytest.ini
+
+```ini
+[pytest]
+asyncio_mode = auto
+testpaths = tests
+python_files = test_*.py
+python_functions = test_*
+addopts = -v --tb=short
+filterwarnings =
+    ignore::DeprecationWarning
+```
 
 ---
 
-## Directory Structure
+## Writing Tests
 
+### Unit Test Example
+
+```python
+# tests/unit/modules/tracking/test_calculator.py
+import pytest
+from src.modules.tracking.calculator import visibility_calculator
+
+
+class TestVisibilityCalculator:
+    """Tests for visibility score calculation."""
+    
+    def test_calculate_score_with_mentions(self):
+        """Score should increase with more mentions."""
+        # Arrange
+        mentions = [
+            {"sentiment": 0.8, "position": 1, "mention_type": "direct"},
+            {"sentiment": 0.6, "position": 2, "mention_type": "indirect"},
+        ]
+        
+        # Act
+        score = visibility_calculator.calculate_score(mentions)
+        
+        # Assert
+        assert 0 <= score <= 100
+        assert score > 0  # Has mentions, should have score
+    
+    def test_calculate_score_empty_mentions(self):
+        """Score should be zero with no mentions."""
+        score = visibility_calculator.calculate_score([])
+        assert score == 0
+    
+    def test_direct_mentions_weight_higher(self):
+        """Direct mentions should have higher weight than indirect."""
+        direct = [{"sentiment": 0.5, "position": 1, "mention_type": "direct"}]
+        indirect = [{"sentiment": 0.5, "position": 1, "mention_type": "indirect"}]
+        
+        direct_score = visibility_calculator.calculate_score(direct)
+        indirect_score = visibility_calculator.calculate_score(indirect)
+        
+        assert direct_score > indirect_score
 ```
-tests/
-    conftest.py              # Shared fixtures
-    unit/
-        modules/
-            user/
-                test_service.py
-                test_repository.py
-            order/
-                test_service.py
-    integration/
-        test_user_order_flow.py
-        test_api_endpoints.py
-    e2e/
-        test_checkout_flow.py
-    fixtures/
-        users.py
-        orders.py
+
+### Integration Test Example
+
+```python
+# tests/integration/test_tracking_api.py
+import pytest
+from httpx import AsyncClient
+from src.main import app
+
+
+@pytest.fixture
+async def client():
+    """Create test HTTP client."""
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        yield client
+
+
+class TestTrackingAPI:
+    """Integration tests for tracking API."""
+    
+    @pytest.mark.asyncio
+    async def test_upload_conversations(self, client, sample_conversation):
+        """Test conversation upload endpoint."""
+        response = await client.post(
+            "/api/tracking/upload",
+            json={"conversations": [sample_conversation]}
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["received"] == 1
+        assert data["processed"] == 1
+    
+    @pytest.mark.asyncio
+    async def test_get_visibility(self, client, db_session):
+        """Test visibility query endpoint."""
+        # Setup: Create brand and mentions
+        # ...
+        
+        response = await client.get(
+            "/api/tracking/visibility",
+            params={"brand": "TestBrand"}
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert "current_score" in data
+        assert "trend" in data
+```
+
+### Async Test Example
+
+```python
+# tests/unit/modules/tracking/test_service.py
+import pytest
+from src.modules.tracking.service import tracking_service
+
+
+class TestTrackingService:
+    """Tests for tracking service."""
+    
+    @pytest.mark.asyncio
+    async def test_register_brand(self, db_session):
+        """Test brand registration."""
+        brand = await tracking_service.register_brand(
+            db_session,
+            name="TestBrand",
+            category="Technology"
+        )
+        
+        assert brand.id is not None
+        assert brand.name == "TestBrand"
+        assert brand.category == "Technology"
+    
+    @pytest.mark.asyncio
+    async def test_register_duplicate_brand_raises(self, db_session):
+        """Duplicate brand should raise error."""
+        await tracking_service.register_brand(db_session, name="TestBrand")
+        
+        with pytest.raises(Exception):  # Specify actual exception
+            await tracking_service.register_brand(db_session, name="TestBrand")
 ```
 
 ---
 
-## Naming Conventions
-
-### Test Files
-
-```
-test_[module_name].py
-```
+## Test Naming Conventions
 
 ### Test Functions
 
 ```python
-def test_[what]_[condition]_[expected_result]():
+def test_[what]_[condition]_[expected]():
+    """Description of what is being tested."""
     pass
 
 # Examples
-def test_create_user_with_valid_email_returns_user():
+def test_calculate_score_with_no_mentions_returns_zero():
     pass
 
-def test_create_user_with_duplicate_email_raises_conflict_error():
+def test_upload_conversations_with_invalid_data_raises_validation_error():
     pass
 
-def test_get_user_when_not_found_returns_none():
+def test_get_visibility_for_unknown_brand_returns_empty_response():
     pass
 ```
 
-### Test Classes (for grouping)
+### Test Classes
 
 ```python
-class TestUserCreation:
-    def test_with_valid_data_succeeds(self):
-        pass
-    
-    def test_with_invalid_email_fails(self):
-        pass
+class TestClassName:
+    """Tests for ClassName."""
+    pass
+
+# Examples
+class TestVisibilityCalculator:
+    """Tests for visibility score calculation."""
+    pass
+
+class TestTrackingService:
+    """Tests for tracking service methods."""
+    pass
 ```
 
 ---
@@ -101,301 +322,157 @@ class TestUserCreation:
 ## Test Structure (AAA Pattern)
 
 ```python
-def test_order_total_calculation():
+def test_something():
     # Arrange - Set up test data and conditions
-    items = [
-        OrderItem(price=10.00, quantity=2),
-        OrderItem(price=5.00, quantity=3),
-    ]
-    order = Order(items=items)
+    user = create_test_user()
+    input_data = {"name": "test"}
     
-    # Act - Execute the behavior being tested
-    total = order.calculate_total()
+    # Act - Execute the code being tested
+    result = service.do_something(user, input_data)
     
     # Assert - Verify the results
-    assert total == 35.00
+    assert result.status == "success"
+    assert result.data is not None
 ```
 
 ---
 
-## Fixtures
+## Mocking
 
-### Basic Fixtures
+### Using pytest-mock
 
 ```python
-# conftest.py
-import pytest
-
-@pytest.fixture
-def sample_user():
-    return User(
-        id="user-123",
-        email="test@example.com",
-        name="Test User"
+def test_with_mock(mocker):
+    """Test with mocked dependency."""
+    # Mock external API call
+    mock_api = mocker.patch(
+        "src.modules.tracking.service.external_api.call"
     )
-
-@pytest.fixture
-def sample_order(sample_user):
-    return Order(
-        id="order-123",
-        user_id=sample_user.id,
-        items=[]
-    )
+    mock_api.return_value = {"status": "ok"}
+    
+    # Test code that uses the API
+    result = tracking_service.process_data()
+    
+    # Verify mock was called
+    mock_api.assert_called_once()
 ```
 
-### Factory Fixtures
+### Mocking Database
 
 ```python
 @pytest.fixture
-def user_factory():
-    def _create_user(**overrides):
-        defaults = {
-            "id": str(uuid4()),
-            "email": f"user-{uuid4()}@example.com",
-            "name": "Test User",
-        }
-        return User(**{**defaults, **overrides})
-    return _create_user
-
-# Usage
-def test_something(user_factory):
-    user1 = user_factory(name="Alice")
-    user2 = user_factory(name="Bob")
-```
-
-### Database Fixtures
-
-```python
-@pytest.fixture
-async def db_session():
-    """Create a test database session with rollback."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    async with AsyncSession(engine) as session:
-        yield session
-        await session.rollback()
-```
-
----
-
-## Mocking Guidelines
-
-### When to Mock
-
-- External services (APIs, databases in unit tests)
-- Time-dependent code
-- Random/non-deterministic code
-- Slow operations
-
-### When NOT to Mock
-
-- The code under test
-- Simple data objects
-- In integration tests (use real implementations)
-
-### Mock Examples
-
-```python
-from unittest.mock import Mock, AsyncMock, patch
-
-# Simple mock
-def test_with_mock():
-    mock_repo = Mock(spec=UserRepository)
-    mock_repo.get.return_value = User(id="123", email="test@example.com")
-    
-    service = UserService(mock_repo)
-    user = service.get_user("123")
-    
-    assert user.email == "test@example.com"
-
-# Async mock
-async def test_with_async_mock():
-    mock_repo = AsyncMock(spec=UserRepository)
-    mock_repo.get.return_value = User(id="123")
-    
-    service = UserService(mock_repo)
-    user = await service.get_user("123")
-
-# Patch decorator
-@patch("modules.user.service.send_email")
-def test_user_creation_sends_email(mock_send_email):
-    service = UserService()
-    service.create_user(data)
-    
-    mock_send_email.assert_called_once_with(data.email)
-```
-
----
-
-## Assertions
-
-### Preferred Assertions
-
-```python
-# Use plain assert with clear conditions
-assert user.email == "test@example.com"
-assert len(orders) == 3
-assert "error" in response.json()
-
-# For exceptions
-with pytest.raises(UserNotFoundError) as exc_info:
-    service.get_user("nonexistent")
-assert "nonexistent" in str(exc_info.value)
-
-# For approximate values
-assert total == pytest.approx(10.5, rel=0.01)
-```
-
-### Avoid
-
-```python
-# Too vague
-assert result  # What should result be?
-
-# Testing implementation
-mock.method.assert_called_with(...)  # Usually unnecessary
-```
-
----
-
-## Testing Async Code
-
-```python
-import pytest
-
-@pytest.mark.asyncio
-async def test_async_operation():
-    result = await async_function()
-    assert result == expected
-
-# With fixtures
-@pytest.fixture
-async def async_client():
-    async with AsyncClient(app, base_url="http://test") as client:
-        yield client
-
-@pytest.mark.asyncio
-async def test_api_endpoint(async_client):
-    response = await async_client.get("/users")
-    assert response.status_code == 200
-```
-
----
-
-## Integration Tests
-
-```python
-@pytest.mark.integration
-async def test_user_order_flow(db_session, event_bus):
-    """Test complete flow: user creates order, payment processed."""
-    # Create user
-    user_service = UserService(UserRepository(db_session))
-    user = await user_service.create_user(CreateUserDTO(...))
-    
-    # Create order
-    order_service = OrderService(
-        OrderRepository(db_session),
-        user_service,
-        event_bus
-    )
-    order = await order_service.create_order(user.id, items)
-    
-    # Verify
-    assert order.status == OrderStatus.PENDING
-    assert len(event_bus.published) == 1
-    assert event_bus.published[0].type == "order.created"
-```
-
----
-
-## Test Data Management
-
-### In-Memory Repositories
-
-```python
-class InMemoryUserRepository(IUserRepository):
-    def __init__(self):
-        self._users: dict[str, User] = {}
-    
-    async def get(self, user_id: str) -> User | None:
-        return self._users.get(user_id)
-    
-    async def save(self, user: User) -> None:
-        self._users[user.id] = user
-```
-
-### Test Database
-
-```python
-# Use separate test database
-TEST_DATABASE_URL = "postgresql://test:test@localhost/test_db"
-
-@pytest.fixture(scope="session")
-def test_db():
-    # Create test database
-    create_database(TEST_DATABASE_URL)
-    yield
-    # Cleanup
-    drop_database(TEST_DATABASE_URL)
-```
-
----
-
-## Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=src --cov-report=html
-
-# Run specific test file
-pytest tests/unit/modules/user/test_service.py
-
-# Run specific test
-pytest tests/unit/modules/user/test_service.py::test_create_user
-
-# Run by marker
-pytest -m integration
-pytest -m "not slow"
-
-# Run with verbose output
-pytest -v
-
-# Stop on first failure
-pytest -x
+async def mock_db_session(mocker):
+    """Mock database session."""
+    mock_session = mocker.AsyncMock()
+    mock_session.execute.return_value.scalars.return_value.all.return_value = []
+    return mock_session
 ```
 
 ---
 
 ## Coverage Requirements
 
-| Type | Minimum Coverage |
-|------|------------------|
-| Overall | 80% |
-| Critical paths | 95% |
-| New code | 90% |
+### Minimum Coverage Targets
+
+| Component | Target |
+|-----------|--------|
+| Overall | 70% |
+| Services | 80% |
+| API Routes | 70% |
+| Utilities | 60% |
+
+### Generating Coverage Report
 
 ```bash
-# Check coverage
-pytest --cov=src --cov-fail-under=80
+# Terminal report
+pytest tests/ --cov=src --cov-report=term-missing
+
+# HTML report
+pytest tests/ --cov=src --cov-report=html
+open htmlcov/index.html
 ```
 
 ---
 
-## CI Integration
+## Frontend Testing
+
+### Type Checking
+
+```bash
+cd frontend
+bun run typecheck
+```
+
+### Component Tests (Future)
+
+```typescript
+// Example with React Testing Library
+import { render, screen } from '@testing-library/react';
+import { ChatMessage } from './ChatMessage';
+
+test('renders message content', () => {
+  render(<ChatMessage role="assistant" content="Hello" />);
+  expect(screen.getByText('Hello')).toBeInTheDocument();
+});
+```
+
+---
+
+## CI/CD Integration
+
+### GitHub Actions Example
 
 ```yaml
 # .github/workflows/test.yml
-test:
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v4
-    - name: Run tests
-      run: |
-        pytest --cov=src --cov-report=xml
-    - name: Upload coverage
-      uses: codecov/codecov-action@v3
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt -r requirements-dev.txt
+      
+      - name: Run tests
+        run: |
+          cd backend
+          pytest tests/ -v --cov=src --cov-report=xml
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: backend/coverage.xml
 ```
+
+---
+
+## Best Practices
+
+### Do
+
+- Write tests before or alongside code (TDD/BDD)
+- Use descriptive test names
+- Keep tests independent (no shared state)
+- Test edge cases and error conditions
+- Use fixtures for common setup
+- Mock external dependencies
+
+### Don't
+
+- Test implementation details
+- Write tests that depend on other tests
+- Ignore flaky tests (fix them)
+- Skip tests without good reason
+- Test framework code (FastAPI, SQLAlchemy)
